@@ -6,39 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-  <script>
-    async function initAgente() {
-      const qs = new URLSearchParams(window.location.search).toString();
-      const res = await fetch(`/sign?${qs}`);
-      const data = await res.json();
-
-      window.chatbaseUserConfig = {
-        user_id: data.user_id,
-        user_hash: data.user_hash,
-        user_metadata: data.user_metadata
-      };
-
-      const script = document.createElement("script");
-      script.src = "https://iva.crsglobal.net/embed.min.js";
-      script.id = "zIaQd27t1krcc7WjQNkha";
-      script.domain = "iva.crsglobal.net";
-
-      script.onload = () => {
-        const t0 = Date.now();
-        const timer = setInterval(() => {
-          if (window.chatbase?.open) {
-            clearInterval(timer);
-            window.chatbase.open(); // ✅ abre luego luego
-          }
-          // corte de seguridad (5s)
-          if (Date.now() - t0 > 5000) clearInterval(timer);
-        }, 50);
-      };
-
-      document.body.appendChild(script);
-    }
-
-    initAgente();
-  </script>
+  <!-- Carga el widget leyendo los datos del usuario desde los query params de la URL -->
+  <script src="/widget.js" defer></script>
 </body>
 </html>
