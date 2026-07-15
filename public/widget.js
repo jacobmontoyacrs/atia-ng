@@ -1,7 +1,7 @@
 /**
  * widget.js — Cargador embebible del agente IVA (Chatbase) con identidad firmada.
  *
- * Cómo insertarlo en CUALQUIER página web (tu dashboard):
+ * Cómo insertarlo en CUALQUIER página web (el dashboard del cliente):
  *
  *   <script>
  *     window.ivaUser = {
@@ -9,6 +9,7 @@
  *       userName:    "Jacob",
  *       userSurname: "Rodriguez",
  *       userEmail:   "jrodriguez@atio.com.mx",
+ *       phoneNumber: "+52 55 1234 5678",
  *       account:     "D00002",
  *       location:    "Dashboard Inicial",
  *       language:    "es-EN"
@@ -28,8 +29,28 @@
   var thisScript = document.currentScript;
   var base = thisScript ? new URL(".", thisScript.src).origin : window.location.origin;
 
-  var AGENT_ID = "zIaQd27t1krcc7WjQNkha";
-  var CAMPOS = ["userId", "userName", "userSurname", "userEmail", "account", "location", "language", "error"];
+  var AGENT_ID = "qOqKnTJHXP8l4RkmHbn3Z";
+  var CAMPOS = [
+    "userId", "userName", "userSurname", "userEmail", "phoneNumber",
+    "account", "location", "language", "error"
+  ];
+
+  // Cola oficial de Chatbase: permite llamar a chatbase(...) antes de que
+  // el embed termine de cargar; las llamadas se encolan y se reproducen.
+  if (!window.chatbase || window.chatbase("getState") !== "initialized") {
+    window.chatbase = function () {
+      if (!window.chatbase.q) window.chatbase.q = [];
+      window.chatbase.q.push(arguments);
+    };
+    window.chatbase = new Proxy(window.chatbase, {
+      get: function (target, prop) {
+        if (prop === "q") return target.q;
+        return function () {
+          return target.apply(null, [prop].concat(Array.prototype.slice.call(arguments)));
+        };
+      }
+    });
+  }
 
   // Reúne los datos del usuario: primero window.ivaUser, si no, los query params
   function obtenerDatos() {
@@ -38,7 +59,7 @@
     var datos = {};
     CAMPOS.forEach(function (k) {
       var v = cfg[k] != null ? cfg[k] : qs.get(k);
-      if (v != null && v !== "" && v !== "null") datos[k] = v;
+      if (v != null && v !== "" && v !== "null") datos[k] = String(v);
     });
     return datos;
   }
@@ -47,9 +68,53 @@
     return !window.ivaUser || window.ivaUser.autoOpen !== false;
   }
 
-  async function init() {
+  /**
+   * Al cambiar de usuario, Chatbase puede conservar la sesión del anterior en
+   * almacenamiento local y mostrarle sus conversaciones. Guardamos qué usuario
+   * cargó la última vez y, si cambió, limpiamos el estado de Chatbase.
+   */
+  function limpiarSiCambioDeUsuario(userId) {
+    var CLAVE = "iva:lastUserId";
+    var anterior = null;
     try {
-      var datos = obtenerDatos();
+      anterior = window.localStorage.getItem(CLAVE);
+    } catch (e) {
+      return; // Sin acceso a localStorage no hay estado previo que limpiar
+    }
+
+    if (anterior && anterior !== userId) {
+      try {
+        Object.keys(window.localStorage)
+          .filter(function (k) { return k.toLowerCase().indexOf("chatbase") !== -1; })
+          .forEach(function (k) { window.localStorage.removeItem(k); });
+        Object.keys(window.sessionStorage)
+          .filter(function (k) { return k.toLowerCase().indexOf("chatbase") !== -1; })
+          .forEach(function (k) { window.sessionStorage.removeItem(k); });
+      } catch (e) {
+        console.warn("[IVA] No se pudo limpiar la sesión anterior:", e);
+      }
+    }
+
+    try {
+      window.localStorage.setItem(CLAVE, userId);
+    } catch (e) { /* no crítico */ }
+  }
+
+  async function init() {
+    var datos = obtenerDatos();
+
+    if (!datos.userId) {
+      console.error(
+        "[IVA] Falta userId. Define window.ivaUser = { userId: \"...\", ... } " +
+        "antes de cargar widget.js, o pasa ?userId=... en la URL. " +
+        "El widget no se carga sin identidad para no mezclar conversaciones."
+      );
+      return;
+    }
+
+    limpiarSiCambioDeUsuario(datos.userId);
+
+    try {
       var params = new URLSearchParams(datos).toString();
       var res = await fetch(base + "/sign?" + params);
       if (!res.ok) throw new Error("respuesta /sign: " + res.status);
@@ -61,8 +126,10 @@
         user_metadata: firmado.user_metadata
       };
     } catch (e) {
-      // Si falla la firma, cargamos el widget igual (sin identidad verificada)
+      // Sin identidad firmada Chatbase entra en modo anónimo y comparte las
+      // conversaciones entre usuarios: preferimos no cargar el widget.
       console.error("[IVA] No se pudo firmar la identidad del usuario:", e);
+      return;
     }
 
     var script = document.createElement("script");

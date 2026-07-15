@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Prueba widget IVA (simula la página del cliente)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 40px; line-height: 1.6; }
+    .nota { background: #f0f4ff; border: 1px solid #c7d2fe; padding: 16px 20px; border-radius: 10px; max-width: 640px; }
+    code { background: #eee; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Página de ejemplo del cliente</h1>
+  <div class="nota">
+    Esto representa la web del cliente. Lo único que él agrega son los dos
+    <code>&lt;script&gt;</code> de abajo. Abajo a la derecha debería aparecer
+    <strong>solo el widget de chat</strong>.
+  </div>
+
+  <!-- 1) El cliente define los datos del usuario -->
+  <script>
+    window.ivaUser = {
+      userId:      "12345678",
+      userName:    "Jacob",
+      userSurname: "Rodriguez",
+      userEmail:   "jrodriguez@atio.com.mx",
+      phoneNumber: "+52 55 1234 5678",
+      account:     "D00002",
+      location:    "Dashboard Inicial",
+      language:    "es-EN"
+      // autoOpen: false   // descomenta para que NO se abra solo
+    };
+  </script>
+
+  <!-- 2) Carga el widget desde tu servidor de Render -->
+  <script src="https://agente-ia-ng.onrender.com/widget.js" defer></script>
+</body>
+</html>

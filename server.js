@@ -27,26 +27,34 @@ app.get("/sign", (req, res) => {
     userName,
     userSurname,
     userEmail,
+    phoneNumber,
     account,
     location,
     language,
     error
   } = req.query;
 
-  const user_id = userId || "user-12345";
+  // Sin userId no se firma: un valor por defecto haria que todos los usuarios
+  // compartieran la misma identidad (y por tanto las mismas conversaciones).
+  if (!userId) {
+    return res.status(400).json({ error: "Falta el parametro userId" });
+  }
+
+  const user_id = String(userId);
   const user_hash = signUserId(user_id);
 
   res.json({
     user_id,
     user_hash,
     user_metadata: {
-      ...(userName   && { name: userName }),
+      ...(userName    && { name: userName }),
       ...(userSurname && { surname: userSurname }),
-      ...(userEmail  && { email: userEmail }),
-      ...(account    && { account }),
-      ...(location   && { location }),
-      ...(language   && { language }),
-      ...(error      && { error })
+      ...(userEmail   && { email: userEmail }),
+      ...(phoneNumber && { phone: phoneNumber }),
+      ...(account     && { account }),
+      ...(location    && { location }),
+      ...(language    && { language }),
+      ...(error       && { error })
     }
   });
 });
