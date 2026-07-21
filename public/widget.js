@@ -13,7 +13,7 @@
  *       account:     "D00002",
  *       location:    "Dashboard Inicial",
  *       language:    "es-EN"
- *       // autoOpen: false   // (opcional) no abrir el chat automáticamente
+ *       // autoOpen: true    // (opcional) abrir el chat al cargar la página
  *     };
  *   </script>
  *   <script src="https://agente-ia-ng.onrender.com/widget.js" defer></script>
@@ -64,8 +64,10 @@
     return datos;
   }
 
+  // Por defecto el widget queda como burbuja: abrirlo en cada carga resulta
+  // invasivo en un dashboard de uso diario. Con autoOpen: true se abre solo.
   function debeAbrirSolo() {
-    return !window.ivaUser || window.ivaUser.autoOpen !== false;
+    return !!(window.ivaUser && window.ivaUser.autoOpen === true);
   }
 
   /**
